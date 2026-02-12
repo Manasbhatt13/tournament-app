@@ -91,14 +91,40 @@ func register(c *gin.Context) {
 }
 
 func login(c *gin.Context) {
-	var u struct{ Email, Password string }
-	c.BindJSON(&u)
+	var u struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	if err := c.BindJSON(&u); err != nil {
+		c.JSON(400, gin.H{"error": "invalid input"})
+		return
+	}
 
 	var hash string
-	db.QueryRow("SELECT password FROM users WHERE email=$1", u.Email).Scan(&hash)
 
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(u.Password)) != nil {
-		c.JSON(401, gin.H{"error": "invalid"})
+	err := db.QueryRow(
+		"SELECT password FROM users WHERE email=$1",
+		u.Email,
+	).Scan(&hash)
+
+	if err == sql.ErrNoRows {
+		c.JSON(401, gin.H{"error": "user not found"})
+		return
+	}
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": "db error"})
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(hash),
+		[]byte(u.Password),
+	)
+
+	if err != nil {
+		c.JSON(401, gin.H{"error": "wrong password"})
 		return
 	}
 
@@ -108,7 +134,9 @@ func login(c *gin.Context) {
 	})
 
 	t, _ := token.SignedString(jwtKey)
+
 	c.JSON(200, gin.H{"token": t})
+
 }
 
 func createTournament(c *gin.Context) {
