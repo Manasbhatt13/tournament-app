@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -23,7 +24,8 @@ func main() {
 
 	jwtKey = []byte(os.Getenv("JWT_SECRET"))
 
-	database, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
+	database, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		panic(err)
 	}
