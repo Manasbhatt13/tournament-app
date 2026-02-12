@@ -5,13 +5,21 @@ const API = "https://tournament-app-4q7h.onrender.com";
 
 function App() {
 
+  // ROLE + AUTH
   const [role,setRole]=useState("");
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [token,setToken]=useState("");
 
+  // ORGANIZER
   const [name,setName]=useState("");
   const [location,setLocation]=useState("");
+
+  // TEAM
+  const [query,setQuery]=useState("");
+  const [results,setResults]=useState([]);
+  const [teamName,setTeamName]=useState("");
+  const [captain,setCaptain]=useState("");
 
   // AUTH
   const register=async()=>{
@@ -25,6 +33,7 @@ function App() {
     alert("Logged in!");
   };
 
+  // ORGANIZER ACTION
   const createTournament=async()=>{
     await axios.post(`${API}/tournament`,
       {name,location},
@@ -33,19 +42,30 @@ function App() {
     alert("Tournament Created!");
   };
 
-  // MAIN UI
+  // TEAM ACTIONS
+  const search=async()=>{
+    const res = await axios.get(`${API}/search?q=${query}`);
+    setResults(res.data);
+  };
+
+  const registerTeam=async(id)=>{
+    await axios.post(`${API}/team`,{
+      tournamentID:id,
+      teamName,
+      captain,
+      paymentProof:"paid"
+    });
+    alert("Team Registered!");
+  };
+
+  // UI FLOW
 
   if(!role){
     return(
       <div style={{padding:40}}>
         <h2>Select Role</h2>
-        <button onClick={()=>setRole("organizer")}>
-          Organizer
-        </button>
-
-        <button onClick={()=>setRole("team")}>
-          Team
-        </button>
+        <button onClick={()=>setRole("organizer")}>Organizer</button>
+        <button onClick={()=>setRole("team")}>Team</button>
       </div>
     )
   }
@@ -58,8 +78,7 @@ function App() {
         <input placeholder="Email"
           onChange={e=>setEmail(e.target.value)} />
 
-        <input placeholder="Password"
-          type="password"
+        <input placeholder="Password" type="password"
           onChange={e=>setPassword(e.target.value)} />
 
         <br/>
@@ -92,7 +111,29 @@ function App() {
     return(
       <div style={{padding:40}}>
         <h2>Team Dashboard</h2>
-        <p>Search & Register for tournaments (next step)</p>
+
+        <input placeholder="Search tournament"
+          onChange={e=>setQuery(e.target.value)} />
+
+        <button onClick={search}>Search</button>
+
+        {results.map(t=>(
+          <div key={t.id} style={{border:"1px solid gray",margin:10,padding:10}}>
+            <h3>{t.name}</h3>
+            <p>Location: {t.location}</p>
+            <p>Code: {t.code}</p>
+
+            <input placeholder="Team Name"
+              onChange={e=>setTeamName(e.target.value)} />
+
+            <input placeholder="Captain Name"
+              onChange={e=>setCaptain(e.target.value)} />
+
+            <button onClick={()=>registerTeam(t.id)}>
+              Register Team
+            </button>
+          </div>
+        ))}
       </div>
     )
   }
