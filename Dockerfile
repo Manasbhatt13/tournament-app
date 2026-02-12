@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:latest
 
 WORKDIR /app
 
@@ -12,3 +12,4 @@ RUN go build -o app
 EXPOSE 8080
 
 CMD ["./app"]
+
