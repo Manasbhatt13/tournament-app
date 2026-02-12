@@ -87,7 +87,7 @@ func register(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&u); err != nil {
-		c.JSON(400, gin.H{"error": "bad input"})
+		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -99,7 +99,8 @@ func register(c *gin.Context) {
 	)
 
 	if err != nil {
-		c.JSON(500, gin.H{"error": "db insert failed"})
+		fmt.Println("DB INSERT ERROR:", err) // 👈 THIS LINE
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
