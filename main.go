@@ -43,6 +43,7 @@ func main() {
 
 	r.POST("/register", register)
 	r.POST("/login", login)
+	r.GET("/search", searchTournaments)
 
 	r.POST("/tournament", createTournament)
 	r.GET("/tournament/:code", getTournament)
@@ -53,6 +54,36 @@ func main() {
 	r.POST("/fixtures/:tid", generateFixtures)
 
 	r.Run()
+}
+
+func searchTournaments(c *gin.Context) {
+	query := c.Query("q")
+
+	rows, _ := db.Query(`
+		SELECT id,name,location,code 
+		FROM tournaments
+		WHERE name ILIKE '%'||$1||'%'
+		OR location ILIKE '%'||$1||'%'
+		OR code ILIKE '%'||$1||'%'
+	`, query)
+
+	var results []gin.H
+
+	for rows.Next() {
+		var id int
+		var name, loc, code string
+
+		rows.Scan(&id, &name, &loc, &code)
+
+		results = append(results, gin.H{
+			"id":       id,
+			"name":     name,
+			"location": loc,
+			"code":     code,
+		})
+	}
+
+	c.JSON(200, results)
 }
 
 func createTables() {

@@ -5,88 +5,98 @@ const API = "https://tournament-app-4q7h.onrender.com";
 
 function App() {
 
+  const [role,setRole]=useState("");
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [token,setToken]=useState("");
 
-  const [tname,setTname]=useState("");
+  const [name,setName]=useState("");
   const [location,setLocation]=useState("");
-  const [code,setCode]=useState("");
 
-  const [team,setTeam]=useState("");
-  const [captain,setCaptain]=useState("");
-  const [tid,setTid]=useState("");
-
-  // REGISTER
+  // AUTH
   const register=async()=>{
     await axios.post(`${API}/register`,{email,password});
     alert("Registered!");
   };
 
-  // LOGIN
   const login=async()=>{
     const res=await axios.post(`${API}/login`,{email,password});
     setToken(res.data.token);
     alert("Logged in!");
   };
 
-  // CREATE TOURNAMENT
   const createTournament=async()=>{
-    const res=await axios.post(`${API}/tournament`,
-      {name:tname,location},
+    await axios.post(`${API}/tournament`,
+      {name,location},
       {headers:{Authorization:token}}
     );
-    setCode(res.data.code);
+    alert("Tournament Created!");
   };
 
-  // REGISTER TEAM
-  const addTeam=async()=>{
-    await axios.post(`${API}/team`,{
-      tournamentID:parseInt(tid),
-      teamName:team,
-      captain,
-      paymentProof:"paid"
-    });
-    alert("Team submitted!");
-  };
+  // MAIN UI
 
-  return (
-    <div style={{padding:40,fontFamily:"Arial"}}>
-      <h2>🏆 Tournament Platform</h2>
+  if(!role){
+    return(
+      <div style={{padding:40}}>
+        <h2>Select Role</h2>
+        <button onClick={()=>setRole("organizer")}>
+          Organizer
+        </button>
 
-      <h3>Organizer Auth</h3>
-      <input placeholder="Email" onChange={e=>setEmail(e.target.value)}/>
-      <input placeholder="Password" type="password"
-             onChange={e=>setPassword(e.target.value)}/>
-      <br/>
-      <button onClick={register}>Register</button>
-      <button onClick={login}>Login</button>
+        <button onClick={()=>setRole("team")}>
+          Team
+        </button>
+      </div>
+    )
+  }
 
-      <hr/>
+  if(!token){
+    return(
+      <div style={{padding:40}}>
+        <h2>{role} Login</h2>
 
-      <h3>Create Tournament</h3>
-      <input placeholder="Tournament Name"
-             onChange={e=>setTname(e.target.value)}/>
-      <input placeholder="Location"
-             onChange={e=>setLocation(e.target.value)}/>
-      <button onClick={createTournament}>Create</button>
+        <input placeholder="Email"
+          onChange={e=>setEmail(e.target.value)} />
 
-      {code && <p>✅ Tournament Code: {code}</p>}
+        <input placeholder="Password"
+          type="password"
+          onChange={e=>setPassword(e.target.value)} />
 
-      <hr/>
+        <br/>
 
-      <h3>Team Registration</h3>
-      <input placeholder="Tournament ID"
-             onChange={e=>setTid(e.target.value)}/>
-      <input placeholder="Team Name"
-             onChange={e=>setTeam(e.target.value)}/>
-      <input placeholder="Captain Name"
-             onChange={e=>setCaptain(e.target.value)}/>
-      <button onClick={addTeam}>Register Team</button>
+        <button onClick={register}>Register</button>
+        <button onClick={login}>Login</button>
+      </div>
+    )
+  }
 
-    </div>
-  );
+  if(role==="organizer"){
+    return(
+      <div style={{padding:40}}>
+        <h2>Organizer Dashboard</h2>
+
+        <input placeholder="Tournament Name"
+          onChange={e=>setName(e.target.value)} />
+
+        <input placeholder="Location"
+          onChange={e=>setLocation(e.target.value)} />
+
+        <button onClick={createTournament}>
+          Create Tournament
+        </button>
+      </div>
+    )
+  }
+
+  if(role==="team"){
+    return(
+      <div style={{padding:40}}>
+        <h2>Team Dashboard</h2>
+        <p>Search & Register for tournaments (next step)</p>
+      </div>
+    )
+  }
+
 }
 
 export default App;
-
