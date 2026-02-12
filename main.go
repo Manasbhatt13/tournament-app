@@ -81,11 +81,27 @@ func createTables() {
 }
 
 func register(c *gin.Context) {
-	var u struct{ Email, Password string }
-	c.BindJSON(&u)
+	var u struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	if err := c.BindJSON(&u); err != nil {
+		c.JSON(400, gin.H{"error": "bad input"})
+		return
+	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 14)
-	db.Exec("INSERT INTO users(email,password) VALUES($1,$2)", u.Email, string(hash))
+
+	_, err := db.Exec(
+		"INSERT INTO users(email,password) VALUES($1,$2)",
+		u.Email, string(hash),
+	)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": "db insert failed"})
+		return
+	}
 
 	c.JSON(200, gin.H{"msg": "registered"})
 }
