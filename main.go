@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -31,6 +32,8 @@ func main() {
 	createTables()
 
 	r := gin.Default()
+
+	r.Use(cors.Default())
 
 	r.POST("/register", register)
 	r.POST("/login", login)
