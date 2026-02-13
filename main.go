@@ -164,22 +164,33 @@ func login(c *gin.Context) {
 
 func createTournament(c *gin.Context) {
 	var t struct {
-		Name     string `json:"name"`
-		Location string `json:"location"`
+		Name        string `json:"name"`
+		Location    string `json:"location"`
+		Date        string `json:"date"`
+		EntryFee    int    `json:"entryFee"`
+		MaxTeams    int    `json:"maxTeams"`
+		Description string `json:"description"`
 	}
 
-	c.BindJSON(&t)
+	if err := c.BindJSON(&t); err != nil {
+		c.JSON(400, gin.H{"error": "invalid data"})
+		return
+	}
 
 	code := fmt.Sprintf("T%d", rand.Intn(99999))
-
 	organizer := c.GetHeader("Authorization")
 
-	db.Exec(
-		"INSERT INTO tournaments(name,code,location,organizer_email) VALUES($1,$2,$3,$4)",
-		t.Name, code, t.Location, organizer,
-	)
+	db.Exec(`
+	INSERT INTO tournaments
+	(name,code,location,date,entry_fee,max_teams,description,organizer_email)
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+		t.Name, code, t.Location, t.Date,
+		t.EntryFee, t.MaxTeams, t.Description, organizer)
 
-	c.JSON(200, gin.H{"code": code})
+	c.JSON(200, gin.H{
+		"msg":  "Tournament Created",
+		"code": code,
+	})
 }
 
 func getTournament(c *gin.Context) {
