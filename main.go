@@ -46,6 +46,7 @@ func main() {
 	// AUTH
 	r.POST("/register", register)
 	r.POST("/login", login)
+	r.POST("/profile", saveProfile)
 
 	// TOURNAMENT
 	r.GET("/my-tournaments", myTournaments)
@@ -132,22 +133,24 @@ func register(c *gin.Context) {
 		Password string `json:"password"`
 	}
 
-	if err := c.BindJSON(&u); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+	c.BindJSON(&u)
+
+	var exists int
+	db.QueryRow(
+		"SELECT COUNT(*) FROM users WHERE email=$1",
+		u.Email).Scan(&exists)
+
+	if exists > 0 {
+		c.JSON(400, gin.H{"error": "User already exists"})
 		return
 	}
 
-	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 14)
+	hash, _ := bcrypt.GenerateFromPassword(
+		[]byte(u.Password), 14)
 
-	_, err := db.Exec(
+	db.Exec(
 		"INSERT INTO users(email,password) VALUES($1,$2)",
-		u.Email, string(hash),
-	)
-
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
+		u.Email, string(hash))
 
 	c.JSON(200, gin.H{"msg": "registered"})
 }
@@ -164,27 +167,63 @@ func login(c *gin.Context) {
 
 	err := db.QueryRow(
 		"SELECT password FROM users WHERE email=$1",
-		u.Email,
-	).Scan(&hash)
+		u.Email).Scan(&hash)
 
 	if err != nil {
-		c.JSON(401, gin.H{"error": "user not found"})
+		c.JSON(401, gin.H{"error": "User not found"})
 		return
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(u.Password)) != nil {
-		c.JSON(401, gin.H{"error": "wrong password"})
+	if bcrypt.CompareHashAndPassword(
+		[]byte(hash), []byte(u.Password)) != nil {
+		c.JSON(401, gin.H{"error": "Wrong password"})
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": u.Email,
-		"exp":   time.Now().Add(24 * time.Hour).Unix(),
-	})
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"email": u.Email,
+			"exp":   time.Now().Add(24 * time.Hour).Unix(),
+		})
 
 	t, _ := token.SignedString(jwtKey)
 
 	c.JSON(200, gin.H{"token": t})
+}
+
+func saveProfile(c *gin.Context) {
+
+	tokenStr := strings.TrimPrefix(
+		c.GetHeader("Authorization"), "Bearer ")
+
+	token, _ := jwt.Parse(tokenStr,
+		func(t *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+	email := token.Claims.(jwt.MapClaims)["email"].(string)
+
+	var p struct {
+		Name    string `json:"name"`
+		Age     int    `json:"age"`
+		Aadhaar string `json:"aadhaar"`
+		Address string `json:"address"`
+		Contact string `json:"contact"`
+	}
+
+	c.BindJSON(&p)
+
+	db.Exec(`
+	UPDATE users SET
+	full_name=$1,age=$2,
+	aadhaar_last4=$3,
+	address=$4,contact=$5
+	WHERE email=$6`,
+		p.Name, p.Age, p.Aadhaar,
+		p.Address, p.Contact, email)
+
+	c.JSON(200, gin.H{"msg": "profile saved"})
 }
 
 //////////////////////////////////////////////////////
@@ -192,6 +231,17 @@ func login(c *gin.Context) {
 // TOURNAMENT
 
 func createTournament(c *gin.Context) {
+
+	tokenStr := strings.TrimPrefix(
+		c.GetHeader("Authorization"), "Bearer ")
+
+	token, _ := jwt.Parse(tokenStr,
+		func(t *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+	email := token.Claims.(jwt.MapClaims)["email"].(string)
+
 	var t struct {
 		Name        string `json:"name"`
 		Location    string `json:"location"`
@@ -199,27 +249,26 @@ func createTournament(c *gin.Context) {
 		EntryFee    int    `json:"entryFee"`
 		MaxTeams    int    `json:"maxTeams"`
 		Description string `json:"description"`
+		Contact     string `json:"contact"`
 	}
 
-	if err := c.BindJSON(&t); err != nil {
-		c.JSON(400, gin.H{"error": "invalid data"})
-		return
-	}
+	c.BindJSON(&t)
 
 	code := fmt.Sprintf("T%d", rand.Intn(99999))
-	organizer := c.GetHeader("Authorization")
 
 	db.Exec(`
 	INSERT INTO tournaments
-	(name,code,location,date,entry_fee,max_teams,description,organizer_email)
-	VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-		t.Name, code, t.Location, t.Date,
-		t.EntryFee, t.MaxTeams, t.Description, organizer)
+	(name,location,date,
+	entry_fee,max_teams,
+	description,contact,
+	code,organizer_email)
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		t.Name, t.Location, t.Date,
+		t.EntryFee, t.MaxTeams,
+		t.Description, t.Contact,
+		code, email)
 
-	c.JSON(200, gin.H{
-		"msg":  "Tournament Created",
-		"code": code,
-	})
+	c.JSON(200, gin.H{"code": code})
 }
 
 func getTournament(c *gin.Context) {

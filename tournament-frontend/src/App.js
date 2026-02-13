@@ -6,6 +6,30 @@ const API = "https://tournament-app-4q7h.onrender.com";
 
 function App() {
 
+  const [profileDone,setProfileDone]=useState(false);
+
+const [fullName,setFullName]=useState("");
+const [age,setAge]=useState("");
+const [aadhaar,setAadhaar]=useState("");
+const [address,setAddress]=useState("");
+const [contact,setContact]=useState("");
+
+const saveProfile=async()=>{
+ await axios.post(`${API}/profile`,
+ {
+  name:fullName,
+  age:parseInt(age),
+  aadhaar,
+  address,
+  contact
+ },
+ {headers:{Authorization:`Bearer ${token}`}}
+ );
+
+ setProfileDone(true);
+};
+
+
   // AUTH
   const [role,setRole]=useState("");
   const [email,setEmail]=useState("");
@@ -126,57 +150,33 @@ function App() {
   }
 
   // ORGANIZER DASHBOARD
-  if(role==="organizer"){
-    return(
-      <div className="container">
+  if(role==="organizer" && !profileDone){
+ return(
+ <div className="container">
+  <h2>Organizer Profile</h2>
 
-        <h2>Create Tournament</h2>
+  <input placeholder="Full Name"
+  onChange={e=>setFullName(e.target.value)}/>
 
-        <input placeholder="Tournament Name"
-          onChange={e=>setName(e.target.value)}/>
+  <input placeholder="Age"
+  onChange={e=>setAge(e.target.value)}/>
 
-        <input placeholder="Location"
-          onChange={e=>setLocation(e.target.value)}/>
+  <input placeholder="Aadhaar last 4"
+  onChange={e=>setAadhaar(e.target.value)}/>
 
-        <input type="date"
-          onChange={e=>setDate(e.target.value)}/>
+  <input placeholder="Address"
+  onChange={e=>setAddress(e.target.value)}/>
 
-        <input placeholder="Entry Fee"
-          onChange={e=>setEntryFee(e.target.value)}/>
+  <input placeholder="Contact"
+  onChange={e=>setContact(e.target.value)}/>
 
-        <input placeholder="Max Teams"
-          onChange={e=>setMaxTeams(e.target.value)}/>
+  <button onClick={saveProfile}>
+   Save Profile
+  </button>
+ </div>
+ )
+}
 
-        <input placeholder="Description"
-          onChange={e=>setDescription(e.target.value)}/>
-
-        <button onClick={createTournament}>
-          Create Tournament
-        </button>
-
-        {createdCode && (
-          <div className="success">
-            Code: {createdCode}
-          </div>
-        )}
-
-        <h3>Your Tournaments</h3>
-
-        {tournaments.length===0 ?
-          <p>No tournaments yet</p> :
-          tournaments.map(t=>(
-            <div className="card" key={t.id}>
-              <h4>{t.name}</h4>
-              <p>{t.location}</p>
-              <p>{t.date}</p>
-              <p>Code: {t.code}</p>
-            </div>
-          ))
-        }
-
-      </div>
-    )
-  }
 
   // TEAM DASHBOARD
   if(role==="team"){
