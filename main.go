@@ -164,10 +164,11 @@ func login(c *gin.Context) {
 	c.BindJSON(&u)
 
 	var hash string
+	var profileDone bool
 
 	err := db.QueryRow(
-		"SELECT password FROM users WHERE email=$1",
-		u.Email).Scan(&hash)
+		"SELECT password, full_name IS NOT NULL FROM users WHERE email=$1",
+		u.Email).Scan(&hash, &profileDone)
 
 	if err != nil {
 		c.JSON(401, gin.H{"error": "User not found"})
@@ -189,7 +190,10 @@ func login(c *gin.Context) {
 
 	t, _ := token.SignedString(jwtKey)
 
-	c.JSON(200, gin.H{"token": t})
+	c.JSON(200, gin.H{
+		"token":       t,
+		"profileDone": profileDone,
+	})
 }
 
 func saveProfile(c *gin.Context) {
@@ -214,7 +218,7 @@ func saveProfile(c *gin.Context) {
 
 	c.BindJSON(&p)
 
-	db.Exec(`
+	_, err := db.Exec(`
 	UPDATE users SET
 	full_name=$1,age=$2,
 	aadhaar_last4=$3,
@@ -222,6 +226,11 @@ func saveProfile(c *gin.Context) {
 	WHERE email=$6`,
 		p.Name, p.Age, p.Aadhaar,
 		p.Address, p.Contact, email)
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(200, gin.H{"msg": "profile saved"})
 }

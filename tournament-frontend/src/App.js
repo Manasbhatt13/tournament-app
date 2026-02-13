@@ -26,8 +26,10 @@ const saveProfile=async()=>{
  {headers:{Authorization:`Bearer ${token}`}}
  );
 
+ alert("Profile Saved!");
  setProfileDone(true);
 };
+
 
 
   // AUTH
@@ -61,9 +63,13 @@ const saveProfile=async()=>{
 
   // LOGIN
   const login=async()=>{
-    const res=await axios.post(`${API}/login`,{email,password});
-    setToken(res.data.token);
-  };
+  const res=await axios.post(`${API}/login`,
+  {email,password});
+
+  setToken(res.data.token);
+  setProfileDone(res.data.profileDone);
+};
+
 
   // FETCH MY TOURNAMENTS
   const fetchMyTournaments=async()=>{
@@ -153,7 +159,7 @@ const saveProfile=async()=>{
   if(role==="organizer" && !profileDone){
  return(
  <div className="container">
-  <h2>Organizer Profile</h2>
+  <h2>Organizer Details</h2>
 
   <input placeholder="Full Name"
   onChange={e=>setFullName(e.target.value)}/>
@@ -161,7 +167,7 @@ const saveProfile=async()=>{
   <input placeholder="Age"
   onChange={e=>setAge(e.target.value)}/>
 
-  <input placeholder="Aadhaar last 4"
+  <input placeholder="Aadhaar Last 4"
   onChange={e=>setAadhaar(e.target.value)}/>
 
   <input placeholder="Address"
@@ -171,7 +177,7 @@ const saveProfile=async()=>{
   onChange={e=>setContact(e.target.value)}/>
 
   <button onClick={saveProfile}>
-   Save Profile
+   Save Details
   </button>
  </div>
  )
