@@ -48,6 +48,8 @@ func main() {
 	r.POST("/login", login)
 
 	// TOURNAMENT
+	r.GET("/my-tournaments", myTournaments)
+
 	r.POST("/tournament", createTournament)
 	r.GET("/tournament/:code", getTournament)
 	r.GET("/search", searchTournaments)
@@ -91,6 +93,33 @@ func createTables() {
 		tournament_id INT,
 		team1 TEXT,
 		team2 TEXT)`)
+}
+
+func myTournaments(c *gin.Context) {
+	email := c.GetHeader("Authorization")
+
+	rows, _ := db.Query(
+		"SELECT id,name,location,date,code FROM tournaments WHERE organizer_email=$1",
+		email)
+
+	var list []gin.H
+
+	for rows.Next() {
+		var id int
+		var name, loc, date, code string
+
+		rows.Scan(&id, &name, &loc, &date, &code)
+
+		list = append(list, gin.H{
+			"id":       id,
+			"name":     name,
+			"location": loc,
+			"date":     date,
+			"code":     code,
+		})
+	}
+
+	c.JSON(200, list)
 }
 
 //////////////////////////////////////////////////////
