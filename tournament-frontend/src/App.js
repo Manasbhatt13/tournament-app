@@ -35,12 +35,14 @@ function App() {
 
   // ORGANIZER ACTION
   const createTournament=async()=>{
-    await axios.post(`${API}/tournament`,
-      {name,location},
-      {headers:{Authorization:token}}
-    );
-    alert("Tournament Created!");
-  };
+  await axios.post(
+    `${API}/tournament`,
+    {name,location},
+    {headers:{ Authorization:`Bearer ${token}` }}
+  );
+  alert("Tournament Created!");
+};
+
 
   // TEAM ACTIONS
   const search=async()=>{
